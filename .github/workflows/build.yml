@@ -1,0 +1,34 @@
+name: Build exe
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyinstaller PyQt6 python-docx lxml
+      - run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --icon storyforge_transparent.ico
+          --add-data "database.py;."
+          --add-data "docx_export.py;."
+          --add-data "font_studio.py;."
+          --add-data "storage_client.py;."
+          --add-data "__init__.py;."
+          --add-data "run.bat;."
+          --add-data "py;py"
+          --add-data "storyforge_transparent.ico;."
+          --hidden-import sqlite3 --hidden-import _sqlite3
+          --hidden-import docx --hidden-import docx_export
+          --hidden-import lxml --collect-all docx
+          storyforge.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StoryForge-exe
+          path: dist/storyforge.exe
