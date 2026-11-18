@@ -56,6 +56,7 @@ jobs:
           --hidden-import fontTools.ttLib
           --hidden-import fontTools.pens.t2Pen
           --hidden-import spellchecker
+          --hidden-import pyspellchecker
           --hidden-import collections
           --hidden-import difflib
           --hidden-import zipfile
@@ -70,10 +71,6 @@ jobs:
           --hidden-import PyQt6.QtGui
           --hidden-import PyQt6.QtWidgets
           --hidden-import PyQt6.sip
-          --collect-all docx
-          --collect-all fontTools
-          --collect-all spellchecker
-          --collect-all PyQt6
           storyforge.py
 
       - uses: actions/upload-artifact@v4
