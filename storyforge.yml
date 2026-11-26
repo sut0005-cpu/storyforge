@@ -1,0 +1,50 @@
+app-id: io.github.sut0005_cpu.storyforge
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: storyforge
+
+finish-args:
+  # GUI display access (X11 & Wayland)
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  # Network access (for storage_client.py / database.py)
+  - --share=network
+  # Home directory access so users can save/open documents
+  - --filesystem=home
+
+modules:
+  # Install Python dependencies (python-docx & pillow)
+  - name: python-deps
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} python-docx pillow || pip3 install --prefix=${FLATPAK_DEST} python-docx pillow
+
+  # Install StoryForge application files
+  - name: storyforge
+    buildsystem: simple
+    build-commands:
+      # Copy all Python modules into /app/bin/
+      - install -d /app/bin
+      - cp *.py /app/bin/
+      - cp storyforge_transparent.ico /app/bin/
+
+      # Create an executable launcher script named 'storyforge'
+      - |
+        cat << 'EOF' > /app/bin/storyforge
+        #!/bin/sh
+        exec python3 /app/bin/storyforge.py "$@"
+        EOF
+      - chmod +x /app/bin/storyforge
+
+      # Convert .ico to 256x256 .png and install icon + desktop file
+      - install -d /app/share/icons/hicolor/256x256/apps
+      - python3 -c "from PIL import Image; Image.open('storyforge_transparent.ico').resize((256, 256)).save('/app/share/icons/hicolor/256x256/apps/io.github.sut0005_cpu.storyforge.png')"
+      - install -Dm644 io.github.sut0005_cpu.storyforge.desktop /app/share/applications/io.github.sut0005_cpu.storyforge.desktop
+    sources:
+      - type: dir
+        path: .
