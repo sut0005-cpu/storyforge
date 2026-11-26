@@ -1,31 +1,38 @@
-name: Build StoryForge Flatpak
+name: Build StoryForge Flatpak Installer
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
       options: --privileged
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: StoryForge.flatpak
-          manifest-path: storyforge.yml
-          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Build Flatpak Installer Bundle
+        run: |
+          flatpak-builder --user --force-clean --repo=repo build-dir io.github.sut0005_cpu.storyforge.yml
+          flatpak build-bundle repo StoryForge-Installer.flatpak io.github.sut0005_cpu.storyforge
 
-      - name: Upload Flatpak Artifact
+      - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StoryForge-Flatpak-x86_64
-          path: StoryForge.flatpak
+          name: StoryForge-Installer-x86_64
+          path: StoryForge-Installer.flatpak
+
+      - name: Attach Installer to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: StoryForge-Installer.flatpak
