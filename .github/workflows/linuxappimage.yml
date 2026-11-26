@@ -22,7 +22,8 @@ jobs:
 
       - name: Build Flatpak Installer Bundle
         run: |
-          dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --repo=repo build-dir storyforge.yml
+          flatpak remote-add --if-not-exists flathub https://flathub.org
+          dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --install-deps-from=flathub --repo=repo build-dir storyforge.yml
           flatpak build-bundle repo StoryForge-Installer.flatpak io.github.sut0005_cpu.storyforge
 
 
