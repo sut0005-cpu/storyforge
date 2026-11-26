@@ -1,8 +1,9 @@
 app-id: io.github.sut0005_cpu.storyforge
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: storyforge
+
 
 finish-args:
   # GUI display access (X11 & Wayland)
