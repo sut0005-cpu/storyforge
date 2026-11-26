@@ -1,0 +1,68 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers when you push a version tag like v1.0.0
+  workflow_dispatch: # Allows manual runs from the GitHub Actions tab
+
+jobs:
+  build:
+    # Use ubuntu-22.04 for broad glibc compatibility on end-user systems
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build binary with PyInstaller
+        run: |
+          pyinstaller --onedir --name myapp main.py
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p MyApp.AppDir/usr/bin
+          cp -r dist/myapp/* MyApp.AppDir/usr/bin/
+          cp assets/myapp.png MyApp.AppDir/myapp.png
+
+          cat << 'EOF' > MyApp.AppDir/myapp.desktop
+          [Desktop Entry]
+          Name=MyApp
+          Exec=myapp
+          Icon=myapp
+          Type=Application
+          Categories=Utility;
+          EOF
+
+          cat << 'EOF' > MyApp.AppDir/AppRun
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          exec "${HERE}/usr/bin/myapp" "$@"
+          EOF
+
+          chmod +x MyApp.AppDir/AppRun
+
+      - name: Package AppImage
+        run: |
+          wget -q https://github.com
+          chmod +x appimagetool-x86_64.AppImage
+          # Extract and run appimagetool because GitHub runners lack FUSE
+          ./appimagetool-x86_64.AppImage --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun MyApp.AppDir MyApp-x86_64.AppImage
+
+      - name: Upload AppImage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyApp-Linux-x86_64
+          path: MyApp-x86_64.AppImage
