@@ -22,7 +22,7 @@ jobs:
 
       - name: Build Flatpak Installer Bundle
         run: |
-          flatpak-builder --user --force-clean --repo=repo build-dir io.github.sut0005_cpu.storyforge.yml
+          flatpak-builder --user --force-clean --repo=repo build-dir storyforge.yml
           flatpak build-bundle repo StoryForge-Installer.flatpak io.github.sut0005_cpu.storyforge
 
       - name: Upload Installer Artifact
@@ -36,3 +36,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: StoryForge-Installer.flatpak
+
