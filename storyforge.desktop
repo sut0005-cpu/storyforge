@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=StoryForge
+Comment=Story writing and formatting studio
+Exec=storyforge
+Icon=io.github.sut0005_cpu.storyforge
+Terminal=false
+Type=Application
+Categories=Office;Utility;
