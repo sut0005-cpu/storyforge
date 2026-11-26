@@ -16,13 +16,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+          uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+          with:
+            bundle: StoryForge.flatpak
+            manifest-path: storyforge.yml
+            cache-key: flatpak-builder-${{ github.sha }}
 
-      - name: Build Flatpak bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: StoryForge.flatpak
-          manifest-path: io.github.sut0005_cpu.storyforge.yml
-          cache-key: flatpak-builder-${{ github.sha }}
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v4
