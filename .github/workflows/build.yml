@@ -1,17 +1,24 @@
-name: Build StoryForge installers
+name: Build and Release to storyforgeapp
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    tags:
+      - 'v*' # Triggers when you push a tag like v1.0.0
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g., v1.0.0) if running manually'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
-  build:
+  # 1. Build Windows (.exe) and macOS (StoryForge.dmg)
+  build-win-mac:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +81,15 @@ jobs:
           & $iscc installer.iss
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed.' }
 
+      - name: Upload Windows Installer to storyforgeapp Release
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          repository: sut0005-cpu/storyforgeapp
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
+          files: dist/installer/StoryForge-Setup-Windows.exe
+
       - name: Build on macOS
         if: runner.os == 'macOS'
         shell: bash
@@ -101,21 +117,19 @@ jobs:
             -srcfolder dist/StoryForge.app \
             -ov \
             -format UDZO \
-            dist/StoryForge-Installer-macOS.dmg
+            dist/StoryForge.dmg
 
-      name: Build StoryForge Flatpak Installer
+      - name: Upload macOS Installer to storyforgeapp Release
+        if: runner.os == 'macOS'
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          repository: sut0005-cpu/storyforgeapp
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
+          files: dist/StoryForge.dmg
 
-on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  build:
+  # 2. Build Linux Flatpak (StoryForge.flatpak)
+  build-flatpak:
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
@@ -129,18 +143,13 @@ jobs:
         run: |
           flatpak remote-add --if-not-exists flathub https://flathub.org
           dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --install-deps-from=flathub --repo=repo build-dir storyforge.yml
-          flatpak build-bundle repo StoryForge-Installer.flatpak io.github.sut0005_cpu.storyforge
+          flatpak build-bundle repo StoryForge.flatpak io.github.sut0005_cpu.storyforge
 
-
-
-      - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: StoryForge-Installer-x86_64
-          path: StoryForge-Installer.flatpak
-
-      - name: Attach Installer to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload Flatpak to storyforgeapp Release
         uses: softprops/action-gh-release@v2
         with:
-          files: StoryForge-Installer.flatpak
+          token: ${{ secrets.RELEASE_TOKEN }}
+          repository: sut0005-cpu/storyforgeapp
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
+          files: StoryForge.flatpak
+
