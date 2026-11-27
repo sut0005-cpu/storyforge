@@ -1,18 +1,14 @@
+
 name: Build and Release to storyforgeapp
 
 on:
   push:
     tags:
-      - 'v*' # Triggers automatically when you push a tag like v1.0.0
+      - 'v*'
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release tag (e.g., v1.0.0) if running manually'
-        required: true
-        default: 'v1.0.0'
 
 jobs:
-  # 1. Build Windows (.exe) and macOS (StoryForge.dmg)
+  # 1. Build Windows (.exe) and macOS (.dmg)
   build-win-mac:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -32,6 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pyinstaller PyQt6 python-docx lxml fonttools pillow pyspellchecker
 
+      # WINDOWS BUILD
       - name: Build on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -56,6 +53,7 @@ jobs:
         shell: pwsh
         run: |
           choco install innosetup --yes --no-progress
+
           $iss = @'
           [Setup]
           AppName=StoryForge
@@ -76,20 +74,28 @@ jobs:
           Name: "{group}\StoryForge"; Filename: "{app}\StoryForge.exe"
           Name: "{autodesktop}\StoryForge"; Filename: "{app}\StoryForge.exe"
           '@
+
           Set-Content -Path installer.iss -Value $iss -Encoding UTF8
+
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           & $iscc installer.iss
-          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed.' }
 
-      - name: Upload Windows Installer to storyforgeapp Release
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Inno Setup failed.'
+          }
+
+      - name: Upload Windows Installer to installer Release
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
+          tag_name: installer
+          overwrite_files: true
+          fail_on_unmatched_files: true
           files: dist/installer/StoryForge-Setup-Windows.exe
 
+      # MACOS BUILD
       - name: Build on macOS
         if: runner.os == 'macOS'
         shell: bash
@@ -119,16 +125,18 @@ jobs:
             -format UDZO \
             dist/StoryForge.dmg
 
-      - name: Upload macOS Installer to storyforgeapp Release
+      - name: Upload macOS Installer to installer Release
         if: runner.os == 'macOS'
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
+          tag_name: installer
+          overwrite_files: true
+          fail_on_unmatched_files: true
           files: dist/StoryForge.dmg
 
-  # 2. Build Linux Flatpak (StoryForge.flatpak)
+  # 2. Build Linux Flatpak
   build-flatpak:
     runs-on: ubuntu-24.04
     container:
@@ -145,20 +153,12 @@ jobs:
           dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --install-deps-from=flathub --repo=repo build-dir storyforge.yml
           flatpak build-bundle repo StoryForge.flatpak io.github.sut0005_cpu.storyforge
 
-      - name: Upload Flatpak to storyforgeapp Release
+      - name: Upload Flatpak to installer Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
+          tag_name: installer
+          overwrite_files: true
+          fail_on_unmatched_files: true
           files: StoryForge.flatpak
-
-
-      - name: Upload Flatpak to storyforgeapp Release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
-          files: StoryForge.flatpak
-
