@@ -25,7 +25,7 @@ from PyQt6.QtGui import (
     QFont, QFontDatabase, QSyntaxHighlighter, QTextCharFormat, QColor,
     QTextCursor, QPainter, QPen, QBrush, QPixmap, QImage,
 )
-from PyQt6.QtWidgets import (
+from PyQt6.QtGui import (
     QApplication,
     QAction,
     QComboBox,
