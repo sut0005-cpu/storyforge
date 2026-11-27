@@ -3,7 +3,7 @@ name: Build and Release to storyforgeapp
 on:
   push:
     tags:
-      - 'v*' # Triggers when you push a tag like v1.0.0
+      - 'v*' # Triggers automatically when you push a tag like v1.0.0
   workflow_dispatch:
     inputs:
       tag_name:
@@ -87,7 +87,7 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
           files: dist/installer/StoryForge-Setup-Windows.exe
 
       - name: Build on macOS
@@ -125,7 +125,7 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           repository: sut0005-cpu/storyforgeapp
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
           files: dist/StoryForge.dmg
 
   # 2. Build Linux Flatpak (StoryForge.flatpak)
@@ -144,6 +144,15 @@ jobs:
           flatpak remote-add --if-not-exists flathub https://flathub.org
           dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --install-deps-from=flathub --repo=repo build-dir storyforge.yml
           flatpak build-bundle repo StoryForge.flatpak io.github.sut0005_cpu.storyforge
+
+      - name: Upload Flatpak to storyforgeapp Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          repository: sut0005-cpu/storyforgeapp
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag_name || 'v1.0.0' }}
+          files: StoryForge.flatpak
+
 
       - name: Upload Flatpak to storyforgeapp Release
         uses: softprops/action-gh-release@v2
