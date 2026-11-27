@@ -129,7 +129,6 @@ jobs:
             --noconfirm \
             --windowed \
             --name StoryForge \
-            --collect-all PyQt6 \
             --add-data "database.py:." \
             --add-data "docx_export.py:." \
             --add-data "font_studio.py:." \
@@ -188,7 +187,6 @@ jobs:
         run: |
           flatpak remote-add --if-not-exists flathub https://flathub.org
           dbus-run-session -- flatpak-builder --force-clean --disable-rofiles-fuse --install-deps-from=flathub --repo=repo build-dir storyforge.yml
-          flatpak build-bundle repo StoryForge.flatpak io.github.sut0005_cpu.storyforge
           flatpak build-bundle repo StoryForge.flatpak io.github.sut0005_cpu.storyforge
 
       - name: Upload Flatpak
