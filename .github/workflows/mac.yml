@@ -1,0 +1,56 @@
+
+      # MACOS BUILD
+      - name: Build on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          python -m PyInstaller \
+            --noconfirm \
+            --clean \
+            --windowed \
+            --name StoryForge \
+            --add-data "database.py:." \
+            --add-data "docx_export.py:." \
+            --add-data "font_studio.py:." \
+            --add-data "storage_client.py:." \
+            --hidden-import sqlite3 \
+            --hidden-import docx \
+            --hidden-import lxml \
+            --hidden-import fontTools \
+            --hidden-import PIL \
+            --hidden-import spellchecker \
+            --hidden-import PyQt6.QtCore \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtWidgets \
+            storyforge.py
+
+      - name: Verify macOS application
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          test -d "dist/StoryForge.app" || {
+            echo "StoryForge.app was not created"
+            exit 1
+          }
+
+      - name: Create macOS DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          hdiutil create \
+            -volname StoryForge \
+            -srcfolder dist/StoryForge.app \
+            -ov \
+            -format UDZO \
+            dist/StoryForge.dmg
+
+      - name: Upload macOS DMG to StoryForge Release
+        if: runner.os == 'macOS'
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          repository: sut0005-cpu/storyforgeapp
+          tag_name: installer
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: dist/StoryForge.dmg
